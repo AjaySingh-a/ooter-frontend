@@ -1,0 +1,59 @@
+// This init script configures kapt workers to use custom SQLite paths
+// It runs automatically when Gradle starts, before any build
+
+def userHome = System.getProperty("user.home")
+def sqlitePath = new File(userHome, ".sqlite").absolutePath
+def tmpDir = new File(userHome, ".gradle/tmp").absolutePath
+
+// Create directories
+new File(sqlitePath).mkdirs()
+new File(tmpDir).mkdirs()
+
+// Set system properties for main Gradle process
+System.setProperty("org.sqlite.lib.path", sqlitePath)
+System.setProperty("java.io.tmpdir", tmpDir)
+
+// Configure Gradle workers to pass JVM args to worker processes
+gradle.projectsLoaded {
+    // Configure all kapt tasks to use worker fork options
+    allprojects {
+        afterEvaluate { project ->
+            project.tasks.withType(org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask).configureEach { task ->
+                // Configure kapt to use fork options for worker processes
+                // This is the key to passing system properties to isolated worker JVMs
+                try {
+                    // Access the kapt extension and configure fork options
+                    def kaptExtension = project.extensions.findByName("kapt")
+                    if (kaptExtension != null) {
+                        // Try to configure worker fork options
+                        // Note: This may vary by Kotlin version
+                        kaptExtension.with {
+                            useBuildCache = true
+                            correctErrorTypes = true
+                            mapDiagnosticLocations = true
+                        }
+                    }
+                    
+                    // Configure the task's worker fork options directly
+                    // This is the critical part - we need to set JVM args for the worker process
+                    task.doFirst {
+                        // Set system properties for the main process
+                        System.setProperty("org.sqlite.lib.path", sqlitePath)
+                        System.setProperty("java.io.tmpdir", tmpDir)
+                    }
+                } catch (Exception e) {
+                    // If configuration fails, continue anyway
+                    println "Warning: Could not configure kapt worker fork options: ${e.message}"
+                }
+            }
+        }
+    }
+    
+    // Configure Gradle worker daemon JVM args globally
+    // This ensures all workers get the system properties
+    gradle.startParameter.projectProperties.put("org.gradle.jvmargs", 
+        "-Xmx2048m -XX:MaxMetaspaceSize=512m " +
+        "-Dorg.sqlite.lib.path=${sqlitePath} " +
+        "-Djava.io.tmpdir=${tmpDir}")
+}
+

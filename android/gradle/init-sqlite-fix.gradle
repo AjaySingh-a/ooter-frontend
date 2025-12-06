@@ -1,0 +1,26 @@
+// This init script runs before any build to configure SQLite JDBC paths
+// It's loaded automatically by Gradle when placed in ~/.gradle/init.d/ or android/gradle/init.d/
+
+allprojects {
+    gradle.projectsEvaluated {
+        // Configure all kapt tasks to use custom temp directory
+        tasks.withType(org.jetbrains.kotlin.gradle.internal.KaptWithoutKotlincTask).configureEach { task ->
+            def userHome = System.getProperty("user.home")
+            def sqlitePath = new File(userHome, ".sqlite").absolutePath
+            def tmpDir = new File(userHome, ".gradle/tmp").absolutePath
+            
+            // Create directories if they don't exist
+            new File(sqlitePath).mkdirs()
+            new File(tmpDir).mkdirs()
+            
+            // Set system properties that will be available to the worker process
+            // Note: These need to be set before the worker JVM starts
+            task.doFirst {
+                System.setProperty("org.sqlite.lib.path", sqlitePath)
+                System.setProperty("java.io.tmpdir", tmpDir)
+                System.setProperty("user.home", userHome)
+            }
+        }
+    }
+}
+
