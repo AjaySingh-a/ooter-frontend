@@ -16,7 +16,7 @@ import { BASE_URL } from '../constants/endpoints';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function VerifyForgotPasswordOtp() {
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { phone } = useLocalSearchParams<{ phone: string }>();
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,29 +33,39 @@ export default function VerifyForgotPasswordOtp() {
 
     setIsLoading(true);
     try {
+      console.log('Verifying OTP - Phone:', phone, 'OTP:', otp.trim());
       const response = await axios.post(`${BASE_URL}/auth/verify-forgot-password-otp`, {
-        email: email,
+        phone: phone,
         otp: otp.trim()
       });
       
-      Alert.alert(
-        'Success!', 
-        'OTP verified successfully! You can now reset your password.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Navigate to reset password page with email parameter
-              router.navigate({
-                pathname: '/reset-password-after-otp' as any,
-                params: { email: email }
-              });
+      console.log('OTP Verification Response:', response.data);
+      
+      // Check if response is actually successful
+      if (response.data && response.data.message) {
+        Alert.alert(
+          'Success!', 
+          'OTP verified successfully! You can now reset your password.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Navigate to reset password page with phone parameter
+                router.navigate({
+                  pathname: '/reset-password-after-otp' as any,
+                  params: { phone: phone }
+                });
+              }
             }
-          }
-        ]
-      );
+          ]
+        );
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error: any) {
-      const message = error?.response?.data?.message || 'Failed to verify OTP. Please try again.';
+      console.error('OTP Verification Error:', error);
+      console.error('Error Response:', error?.response?.data);
+      const message = error?.response?.data?.message || error?.message || 'Failed to verify OTP. Please try again.';
       Alert.alert('Error', message);
     } finally {
       setIsLoading(false);
@@ -63,18 +73,18 @@ export default function VerifyForgotPasswordOtp() {
   };
 
   const handleResendOtp = async () => {
-    if (!email) {
-      Alert.alert('Error', 'Email not found. Please go back and try again.');
+    if (!phone) {
+      Alert.alert('Error', 'Phone number not found. Please go back and try again.');
       return;
     }
 
     setIsLoading(true);
     try {
       const response = await axios.post(`${BASE_URL}/auth/forgot-password`, {
-        email: email
+        phone: phone
       });
       
-      Alert.alert('Success!', 'New OTP has been sent to your email.');
+      Alert.alert('Success!', 'New OTP has been sent to your phone number.');
     } catch (error: any) {
       const message = error?.response?.data?.message || 'Failed to resend OTP. Please try again.';
       Alert.alert('Error', message);
@@ -104,13 +114,17 @@ export default function VerifyForgotPasswordOtp() {
         <Text style={styles.subtitle}>
           Enter the 6-digit OTP sent to:
         </Text>
-        <Text style={styles.email}>{email}</Text>
+        <Text style={styles.email}>+91 {phone}</Text>
         
         <TextInput
           style={styles.otpInput}
           placeholder="Enter 6-digit OTP"
           value={otp}
-          onChangeText={setOtp}
+          onChangeText={(text) => {
+            // Only allow numbers
+            const numericText = text.replace(/[^0-9]/g, '');
+            setOtp(numericText);
+          }}
           keyboardType="numeric"
           maxLength={6}
           autoFocus

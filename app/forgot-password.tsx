@@ -19,20 +19,20 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
 
-  const validateEmail = () => {
-    setEmailError('');
+  const validatePhone = () => {
+    setPhoneError('');
     
-    if (!email.trim()) {
-      setEmailError('Email is required');
+    if (!phone.trim()) {
+      setPhoneError('Phone number is required');
       return false;
     }
     
-    if (!email.includes('@') || !email.includes('.')) {
-      setEmailError('Please enter a valid email address');
+    if (phone.length !== 10 || !/^\d+$/.test(phone)) {
+      setPhoneError('Please enter a valid 10-digit phone number');
       return false;
     }
     
@@ -40,27 +40,27 @@ export default function ForgotPasswordScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!validateEmail()) {
+    if (!validatePhone()) {
       return;
     }
 
     setIsLoading(true);
     try {
       const response = await axios.post(`${BASE_URL}/auth/forgot-password`, {
-        email: email.trim()
+        phone: phone.trim()
       });
       
       Alert.alert(
         'Success!', 
-        'Password reset OTP has been sent to your email. Please check your inbox and enter the OTP.',
+        'Password reset OTP has been sent to your phone number. Please check your SMS and enter the OTP.',
         [
           {
             text: 'OK',
             onPress: () => {
-              // Navigate to OTP verification page with email
+              // Navigate to OTP verification page with phone
               router.navigate({
                 pathname: '/verify-forgot-password-otp' as any,
-                params: { email: email.trim() }
+                params: { phone: phone.trim() }
               });
             }
           }
@@ -99,25 +99,27 @@ export default function ForgotPasswordScreen() {
         <Image source={require('@/assets/images/logo.png')} style={styles.logo} />
 
         <Text style={styles.subtitle}>
-          Enter your email address and we'll send you an OTP to reset your password.
+          Enter your phone number and we'll send you an OTP to reset your password.
         </Text>
 
         <View style={styles.inputContainer}>
           <TextInput
-            style={[styles.input, emailError ? styles.inputError : null]}
-            placeholder="Enter your email"
+            style={[styles.input, phoneError ? styles.inputError : null]}
+            placeholder="Enter your phone number"
             placeholderTextColor="#888"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
+            keyboardType="phone-pad"
+            maxLength={10}
+            value={phone}
             onChangeText={(text) => {
-              setEmail(text);
-              if (emailError) setEmailError('');
+              // Only allow numbers
+              const numericText = text.replace(/[^0-9]/g, '');
+              setPhone(numericText);
+              if (phoneError) setPhoneError('');
             }}
             editable={!isLoading}
           />
-          {emailError ? (
-            <Text style={styles.errorText}>{emailError}</Text>
+          {phoneError ? (
+            <Text style={styles.errorText}>{phoneError}</Text>
           ) : null}
         </View>
 

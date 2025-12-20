@@ -32,7 +32,7 @@
       }
     },
     "android": {
-      "versionCode": 85,
+      "versionCode": 86,
       "icon": "./assets/images/icon.png",
       "config": {
         "googleMaps": {

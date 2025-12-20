@@ -16,7 +16,7 @@ import { BASE_URL } from '../constants/endpoints';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ResetPasswordAfterOtp() {
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { phone } = useLocalSearchParams<{ phone: string }>();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -67,7 +67,7 @@ export default function ResetPasswordAfterOtp() {
     setIsLoading(true);
     try {
       const response = await axios.post(`${BASE_URL}/auth/reset-password-after-otp`, {
-        email: email,
+        phone: phone,
         newPassword: newPassword.trim()
       });
       
