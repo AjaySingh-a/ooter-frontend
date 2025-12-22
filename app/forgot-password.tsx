@@ -45,10 +45,17 @@ export default function ForgotPasswordScreen() {
     }
 
     setIsLoading(true);
+    const phoneNumber = phone.trim();
+    console.log('=== FORGOT PASSWORD REQUEST ===');
+    console.log('Phone:', phoneNumber);
+    console.log('API URL:', `${BASE_URL}/auth/forgot-password`);
+    
     try {
       const response = await axios.post(`${BASE_URL}/auth/forgot-password`, {
-        phone: phone.trim()
+        phone: phoneNumber
       });
+      
+      console.log('Forgot password response:', response.data);
       
       Alert.alert(
         'Success!', 
@@ -60,13 +67,16 @@ export default function ForgotPasswordScreen() {
               // Navigate to OTP verification page with phone
               router.navigate({
                 pathname: '/verify-forgot-password-otp' as any,
-                params: { phone: phone.trim() }
+                params: { phone: phoneNumber }
               });
             }
           }
         ]
       );
     } catch (error: any) {
+      console.error('Forgot password error:', error);
+      console.error('Error response:', error?.response?.data);
+      console.error('Error status:', error?.response?.status);
       const message = error?.response?.data?.message || 'Failed to send reset OTP. Please try again.';
       Alert.alert('Error', message);
     } finally {
