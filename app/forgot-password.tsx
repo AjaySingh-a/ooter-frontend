@@ -40,44 +40,73 @@ export default function ForgotPasswordScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!validatePhone()) {
+    // ✅ Validation check
+    const isValid = validatePhone();
+    if (!isValid) {
+      // Validation failed - error already shown by validatePhone
       return;
     }
 
     setIsLoading(true);
     const phoneNumber = phone.trim();
-    console.log('=== FORGOT PASSWORD REQUEST ===');
-    console.log('Phone:', phoneNumber);
-    console.log('API URL:', `${BASE_URL}/auth/forgot-password`);
+    
+    // ✅ Check BASE_URL
+    if (!BASE_URL) {
+      Alert.alert('Configuration Error', 'API URL not configured. Please check your environment variables.');
+      setIsLoading(false);
+      return;
+    }
+    
+    const apiUrl = `${BASE_URL}/auth/forgot-password`;
     
     try {
-      const response = await axios.post(`${BASE_URL}/auth/forgot-password`, {
+      const response = await axios.post(apiUrl, {
         phone: phoneNumber
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000, // 30 seconds timeout
       });
       
-      console.log('Forgot password response:', response.data);
-      
-      Alert.alert(
-        'Success!', 
-        'Password reset OTP has been sent to your phone number. Please check your SMS and enter the OTP.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Navigate to OTP verification page with phone
-              router.navigate({
-                pathname: '/verify-forgot-password-otp' as any,
-                params: { phone: phoneNumber }
-              });
+      // Check if response is successful
+      if (response.data && (response.data.message || response.status === 200)) {
+        Alert.alert(
+          'Success!', 
+          'Password reset OTP has been sent to your phone number. Please check your SMS and enter the OTP.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Navigate to OTP verification page with phone
+                router.navigate({
+                  pathname: '/verify-forgot-password-otp' as any,
+                  params: { phone: phoneNumber }
+                });
+              }
             }
-          }
-        ]
-      );
+          ]
+        );
+      } else {
+        throw new Error('Invalid response from server');
+      }
     } catch (error: any) {
-      console.error('Forgot password error:', error);
-      console.error('Error response:', error?.response?.data);
-      console.error('Error status:', error?.response?.status);
-      const message = error?.response?.data?.message || 'Failed to send reset OTP. Please try again.';
+      let message = 'Failed to send reset OTP. Please try again.';
+      
+      if (error?.response?.data?.message) {
+        message = error.response.data.message;
+      } else if (error?.response?.data?.error) {
+        message = error.response.data.error;
+      } else if (error?.message) {
+        message = error.message;
+      } else if (error?.code === 'ECONNABORTED') {
+        message = 'Request timeout. Please check your internet connection.';
+      } else if (error?.code === 'ERR_NETWORK') {
+        message = 'Network error. Please check your internet connection.';
+      } else if (error?.code === 'ECONNREFUSED') {
+        message = 'Cannot connect to server. Please check your internet connection.';
+      }
+      
       Alert.alert('Error', message);
     } finally {
       setIsLoading(false);
@@ -135,8 +164,14 @@ export default function ForgotPasswordScreen() {
 
         <TouchableOpacity 
           style={[styles.submitBtn, isLoading && styles.submitBtnDisabled]} 
-          onPress={handleSubmit}
+          onPress={() => {
+            // ✅ Ensure button click is working
+            if (!isLoading) {
+              handleSubmit();
+            }
+          }}
           disabled={isLoading}
+          activeOpacity={0.7}
         >
           {isLoading ? (
             <ActivityIndicator color="#fff" size="small" />
