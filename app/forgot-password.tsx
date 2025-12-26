@@ -40,23 +40,20 @@ export default function ForgotPasswordScreen() {
   };
 
   const handleSubmit = async () => {
-    // ✅ Validation check
-    const isValid = validatePhone();
-    if (!isValid) {
-      // Validation failed - error already shown by validatePhone
+    // ✅ Step 1: Validation check
+    if (!validatePhone()) {
+      // Error already shown by validatePhone
       return;
     }
 
-    setIsLoading(true);
-    const phoneNumber = phone.trim();
-    
-    // ✅ Check BASE_URL
+    // ✅ Step 2: Check BASE_URL
     if (!BASE_URL) {
       Alert.alert('Configuration Error', 'API URL not configured. Please check your environment variables.');
-      setIsLoading(false);
       return;
     }
     
+    setIsLoading(true);
+    const phoneNumber = phone.trim();
     const apiUrl = `${BASE_URL}/auth/forgot-password`;
     
     try {
@@ -66,10 +63,9 @@ export default function ForgotPasswordScreen() {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 30000, // 30 seconds timeout
+        timeout: 30000,
       });
       
-      // Check if response is successful
       if (response.data && (response.data.message || response.status === 200)) {
         Alert.alert(
           'Success!', 
@@ -78,7 +74,6 @@ export default function ForgotPasswordScreen() {
             {
               text: 'OK',
               onPress: () => {
-                // Navigate to OTP verification page with phone
                 router.navigate({
                   pathname: '/verify-forgot-password-otp' as any,
                   params: { phone: phoneNumber }
@@ -107,7 +102,11 @@ export default function ForgotPasswordScreen() {
         message = 'Cannot connect to server. Please check your internet connection.';
       }
       
-      Alert.alert('Error', message);
+      // ✅ Show detailed error for debugging
+      Alert.alert(
+        'Error', 
+        `${message}\n\nDebug Info:\nURL: ${apiUrl}\nPhone: ${phoneNumber}\nError Code: ${error?.code || 'N/A'}\nStatus: ${error?.response?.status || 'N/A'}`
+      );
     } finally {
       setIsLoading(false);
     }
