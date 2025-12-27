@@ -42,8 +42,8 @@ export default function ListingScreen() {
   const refreshTrigger = useRef(0);
   
   // Cache duration constants
-  const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes for normal usage
-  const PULL_REFRESH_LOCK = 10 * 1000;   // 10 seconds for pull-to-refresh
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for normal usage
+  const PULL_REFRESH_LOCK = 5 * 1000;   // 5 seconds for pull-to-refresh
 
   const getUserIdFromToken = (token: string): string => {
     try {
@@ -94,7 +94,7 @@ export default function ListingScreen() {
       
       // Only API call when needed
       const data = await fetchWithCache<ListingStats>(
-        `${BASE_URL}/vendors/listing-dashboard`,
+        `${BASE_URL}/vendors/listing-dashboard?t=${Date.now()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -134,7 +134,7 @@ export default function ListingScreen() {
     }
   };
 
-  // Smart refresh when screen comes into focus
+  // Smart refresh when screen comes into focus - 5 minutes cache
   useFocusEffect(
     useCallback(() => {
       const smartRefresh = async () => {
@@ -145,15 +145,15 @@ export default function ListingScreen() {
           return;
         }
         
-        // Case 2: Data older than 15 minutes - refresh
+        // Case 2: Data older than 5 minutes - refresh
         if (Date.now() - lastFetchTime.current > CACHE_DURATION) {
-          console.log('Data stale (>15min), refreshing...');
+          console.log('Data stale (>5min), refreshing...');
           await fetchStats(true);
           return;
         }
         
-        // Case 3: Data fresh (within 15min) - use cache, no API call
-        console.log('Data is fresh (within 15min), using cache');
+        // Case 3: Data fresh (within 5min) - use cache, no API call
+        console.log('Data is fresh (within 5min), using cache');
       };
       
       smartRefresh();

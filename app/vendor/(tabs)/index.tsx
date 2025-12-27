@@ -57,8 +57,8 @@ export default function VendorDashboard() {
   const lastFetchTime = useRef(0);
   
   // Cache duration constants
-  const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes for normal usage
-  const PULL_REFRESH_LOCK = 10 * 1000;   // 10 seconds for pull-to-refresh
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for normal usage
+  const PULL_REFRESH_LOCK = 5 * 1000;   // 5 seconds for pull-to-refresh
 
   const clearAllCache = async () => {
     const token = await getToken();
@@ -132,9 +132,9 @@ export default function VendorDashboard() {
     const cacheKey = `vendorDashboard-${userId}`;
 
     try {
-      // Smart caching: Only force refresh when absolutely necessary
+      // Smart caching: Reduced duration for instant database updates
       const shouldForceRefresh = forceRefresh || 
-        (Date.now() - lastFetchTime.current > 300000); // 5 minutes
+        (Date.now() - lastFetchTime.current > CACHE_DURATION); // 30 seconds
       
       const dashboardData = await fetchWithCache<VendorStats>(
         `${BASE_URL}/vendors/dashboard`,
@@ -242,7 +242,7 @@ export default function VendorDashboard() {
     await fetchData(true);
   }, []);
 
-  // Smart refresh when screen comes into focus
+  // Smart refresh when screen comes into focus - 5 minutes cache
   useFocusEffect(
     useCallback(() => {
       const smartRefresh = async () => {
@@ -253,15 +253,15 @@ export default function VendorDashboard() {
           return;
         }
         
-        // Case 2: Data older than 15 minutes - refresh
-        if (Date.now() - lastFetchTime.current > 900000) { // 15 minutes
-          console.log('Data stale (>15min), refreshing dashboard...');
+        // Case 2: Data older than 5 minutes - refresh
+        if (Date.now() - lastFetchTime.current > CACHE_DURATION) {
+          console.log('Data stale (>5min), refreshing dashboard...');
           await fetchData(true);
           return;
         }
         
-        // Case 3: Data fresh (within 15min) - use cache, no API call
-        console.log('Dashboard data is fresh (within 15min), using cache');
+        // Case 3: Data fresh (within 5min) - use cache, no API call
+        console.log('Dashboard data is fresh (within 5min), using cache');
       };
       
       smartRefresh();

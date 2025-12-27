@@ -41,8 +41,8 @@ export default function BookedListingsScreen() {
   const router = useRouter();
   
   // Cache duration constants
-  const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes for normal usage
-  const PULL_REFRESH_LOCK = 10 * 1000;   // 10 seconds for pull-to-refresh
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for normal usage
+  const PULL_REFRESH_LOCK = 5 * 1000;   // 5 seconds for pull-to-refresh
   const lastFetchTime = useRef(0);
 
   const fetchListings = async (forceRefresh = false) => {
@@ -71,10 +71,12 @@ export default function BookedListingsScreen() {
       const cacheKey = `booked-listings-${userId}-${springSort}`;
 
       const response = await fetchWithCache<{ content: Listing[] }>(
-        `${BASE_URL}/vendors/booked-listings?page=0&size=20&sort=${springSort}`,
+        `${BASE_URL}/vendors/booked-listings?page=0&size=20&sort=${springSort}&t=${Date.now()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
           },
         },
         cacheKey,
@@ -128,7 +130,7 @@ export default function BookedListingsScreen() {
     await fetchListings(true);
   }, []);
 
-  // Smart refresh when screen comes into focus
+  // Smart refresh when screen comes into focus - 5 minutes cache
   useFocusEffect(
     useCallback(() => {
       const smartRefresh = async () => {
@@ -139,15 +141,15 @@ export default function BookedListingsScreen() {
           return;
         }
         
-        // Case 2: Data older than 15 minutes - refresh
+        // Case 2: Data older than 5 minutes - refresh
         if (Date.now() - lastFetchTime.current > CACHE_DURATION) {
-          console.log('Data stale (>15min), refreshing booked listings...');
+          console.log('Data stale (>5min), refreshing booked listings...');
           await fetchListings(true);
           return;
         }
         
-        // Case 3: Data fresh (within 15min) - use cache, no API call
-        console.log('Booked listings data is fresh (within 15min), using cache');
+        // Case 3: Data fresh (within 5min) - use cache, no API call
+        console.log('Booked listings data is fresh (within 5min), using cache');
       };
       
       smartRefresh();

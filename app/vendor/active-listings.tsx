@@ -59,8 +59,8 @@ export default function ActiveListingsScreen() {
   const router = useRouter();
   
   // Cache duration constants
-  const CACHE_DURATION = 15 * 60 * 1000; // 15 minutes for normal usage
-  const PULL_REFRESH_LOCK = 10 * 1000;   // 10 seconds for pull-to-refresh
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for normal usage
+  const PULL_REFRESH_LOCK = 5 * 1000;   // 5 seconds for pull-to-refresh
   const lastFetchTime = useRef(0);
 
   const fetchListings = async (forceRefresh = false) => {
@@ -93,10 +93,12 @@ export default function ActiveListingsScreen() {
       const cacheKey = `vendor-listings-${userId}-${sort}`;
 
       const response = await fetchWithCache<ApiResponse | Listing[]>(
-        `${BASE_URL}/vendors/active-listings?page=0&size=20&sort=${springSort}`,
+        `${BASE_URL}/vendors/active-listings?page=0&size=20&sort=${springSort}&t=${Date.now()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
           },
         },
         cacheKey,
@@ -162,7 +164,7 @@ export default function ActiveListingsScreen() {
     await fetchListings(true);
   }, []);
 
-  // Smart refresh when screen comes into focus
+  // Smart refresh when screen comes into focus - 5 minutes cache
   useFocusEffect(
     useCallback(() => {
       const smartRefresh = async () => {
@@ -173,15 +175,15 @@ export default function ActiveListingsScreen() {
           return;
         }
         
-        // Case 2: Data older than 15 minutes - refresh
+        // Case 2: Data older than 5 minutes - refresh
         if (Date.now() - lastFetchTime.current > CACHE_DURATION) {
-          console.log('Data stale (>15min), refreshing active listings...');
+          console.log('Data stale (>5min), refreshing active listings...');
           await fetchListings(true);
           return;
         }
         
-        // Case 3: Data fresh (within 15min) - use cache, no API call
-        console.log('Active listings data is fresh (within 15min), using cache');
+        // Case 3: Data fresh (within 5min) - use cache, no API call
+        console.log('Active listings data is fresh (within 5min), using cache');
       };
       
       smartRefresh();
