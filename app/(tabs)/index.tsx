@@ -59,6 +59,8 @@ export default function HomeScreen() {
   const [showLocationDialog, setShowLocationDialog] = useState(false);
   const [pendingLocationAction, setPendingLocationAction] = useState<(() => void) | null>(null);
   const [hasAskedLocationPermission, setHasAskedLocationPermission] = useState(false);
+  const [nearbyActive, setNearbyActive] = useState(false);
+  const [nearbyLoading, setNearbyLoading] = useState(false);
   
   const activeApiCalls = useRef<Record<string, ApiCall>>({});
   const lastSyncTime = useRef(0);
@@ -238,9 +240,11 @@ export default function HomeScreen() {
       
       try {
         setLoading(true);
+        setNearbyLoading(true);
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           setLocationPermission(false);
+          setNearbyLoading(false);
           Alert.alert('Permission Denied', 'Location access is required for nearby hoardings.');
           return;
         }
@@ -290,6 +294,7 @@ export default function HomeScreen() {
         if (!abortController.signal.aborted) {
           setLoading(false);
           setRefreshing(false);
+          setNearbyLoading(false);
         }
       }
     });
@@ -338,25 +343,48 @@ export default function HomeScreen() {
   const handleCitySelect = async (city: string) => {
     if (isRedirecting) return;
     
-    // TOGGLE FUNCTIONALITY: If same city is tapped again, deselect and show default
-    if (selectedCity === city) {
-      setSelectedCity('');
+    if (city === 'Nearby') {
+      // Toggle functionality: If already active, turn off
+      if (nearbyActive && selectedCity === 'Nearby') {
+        setNearbyActive(false);
+        setNearbyLoading(false);
+        setSelectedCity('');
+        setSearchText('');
+        setSelectedCategory('');
+        // Fetch default hoardings
+        await fetchHoardings('', 'default-hoardings');
+        return;
+      }
+      
+      // First tap: Show loading and fetch nearby
+      setSelectedCity(city);
       setSearchText('');
       setSelectedCategory('');
-      // Fetch default hoardings (app open wali 5 hoardings)
-      await fetchHoardings('', 'default-hoardings');
-      return;
-    }
-    
-    // First time city selection
-    setSelectedCity(city);
-    setSearchText('');
-    setSelectedCategory('');
-
-    if (city === 'Nearby') {
+      setNearbyActive(true);
+      setNearbyLoading(true);
+      
       // CACHE OPTIMIZATION: Remove timestamp for better cache hits
       await fetchNearby(`nearby-${city}`);
+      setNearbyLoading(false);
     } else {
+      // Reset nearby state when selecting other cities
+      setNearbyActive(false);
+      setNearbyLoading(false);
+      
+      // TOGGLE FUNCTIONALITY: If same city is tapped again, deselect and show default
+      if (selectedCity === city) {
+        setSelectedCity('');
+        setSearchText('');
+        setSelectedCategory('');
+        // Fetch default hoardings (app open wali 5 hoardings)
+        await fetchHoardings('', 'default-hoardings');
+        return;
+      }
+      
+      // First time city selection
+      setSelectedCity(city);
+      setSearchText('');
+      setSelectedCategory('');
       // Fix: Use proper city parameter format for API
       await fetchHoardings(`city=${encodeURIComponent(city)}`, `city-${city}`);
     }
@@ -699,9 +727,15 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        {loading && !hoardings.length ? (
+        {nearbyLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#4A2DD8" />
+            <Text style={styles.loadingText}>Searching nearby hoardings...</Text>
+            <Text style={styles.loadingSubText}>Finding the best locations near you</Text>
+          </View>
+        ) : loading && !hoardings.length ? (
           <ActivityIndicator size="large" style={{ marginVertical: 40 }} />
-        ) : hoardings.length === 0 && selectedCity === 'Nearby' ? (
+        ) : hoardings.length === 0 && selectedCity === 'Nearby' && nearbyActive ? (
           <View style={styles.welcomeMessage}>
             <Text style={styles.welcomeText}>
               No nearby hoardings found. Please check your location settings or try a different city.
@@ -964,5 +998,24 @@ const styles = StyleSheet.create({
     fontSize: 14, 
     color: '#4A2DD8', 
     textAlign: 'center' 
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#4A2DD8',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  loadingSubText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });

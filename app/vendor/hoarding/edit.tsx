@@ -203,7 +203,6 @@ export default function EditHoardingScreen() {
 
   const generateDescription = () => {
     const points = [];
-    if (form?.verifiedProperty) points.push('• Verified Property');
     if (form?.eyeCatching) points.push('• Eye catching visibility');
     if (form?.mainHighway) points.push('• Site on the Main Highway');
     if (form?.currentlyAvailable) points.push('• Currently Available');
@@ -658,16 +657,6 @@ export default function EditHoardingScreen() {
           
           <View style={styles.checkboxRow}>
             <TouchableOpacity 
-              style={[styles.checkbox, form.verifiedProperty && styles.checkedBox]} 
-              onPress={() => handleToggle('verifiedProperty')}
-            >
-              {form.verifiedProperty && <Ionicons name="checkmark" size={16} color="white" />}
-            </TouchableOpacity>
-            <Text style={styles.checkboxLabel}>Verified Property</Text>
-          </View>
-          
-          <View style={styles.checkboxRow}>
-            <TouchableOpacity 
               style={[styles.checkbox, form.eyeCatching && styles.checkedBox]} 
               onPress={() => handleToggle('eyeCatching')}
             >
@@ -909,11 +898,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     fontSize: 14,
     backgroundColor: '#fff',
     marginBottom: 8,
+    textAlignVertical: 'center',
+    minHeight: 40,
   },
   switchRow: {
     flexDirection: 'row',

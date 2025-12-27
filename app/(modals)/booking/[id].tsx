@@ -326,10 +326,17 @@ export default function BookingScreen() {
     if (!hoarding) return;
     
     try {
-      const shareText = `Check out this hoarding site: ${hoarding.name} in ${hoarding.city}, ${hoarding.location}. Price: ₹${hoarding.price}/month. Book now on OOTER!`;
+      // Deep link for in-app navigation (expo-router format)
+      const deepLink = `ooterfrontend://(modals)/booking/${hoarding.id}`;
+      // Play Store URL as fallback
+      const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.ajay.s_16.ooterfrontend';
+      
+      // Create share message - if app installed, deep link opens; otherwise Play Store
+      const shareText = `Check out this hoarding site: ${hoarding.name} in ${hoarding.city}, ${hoarding.location}. Price: ₹${hoarding.price}/month.\n\nOpen in app: ${deepLink}\n\nDon't have OOTER? Download: ${playStoreUrl}`;
       
       const result = await Share.share({
         message: shareText,
+        url: Platform.OS === 'ios' ? deepLink : undefined, // iOS can use url, Android uses message
         title: 'Hoarding Site Details',
       });
       
@@ -416,12 +423,6 @@ export default function BookingScreen() {
           <Text style={styles.locationLabel}>Pincode</Text>
           <Text style={styles.locationValue}>{hoarding.pinCode || '-'}</Text>
         </View>
-        {hoarding.verifiedProperty && (
-          <View style={styles.locationRow}>
-            <Text style={styles.locationLabel}>Status</Text>
-            <Text style={[styles.locationValue, { color: '#4CAF50' }]}>Verified Property</Text>
-          </View>
-        )}
       </View>
     );
   };

@@ -8,6 +8,7 @@ import {
   Image,
   ScrollView,
   Alert,
+  Platform,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { BASE_URL } from '@/constants/endpoints';
@@ -46,8 +47,13 @@ export default function ReferScreen() {
 
   const handleShare = async () => {
     try {
+      const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.ajay.s_16.ooterfrontend';
+      const shareMessage = `Hey! Use my OOTER referral code ${referralCode} and earn 100 coins on your first booking.\n\nDownload OOTER: ${playStoreUrl}`;
+      
       await Share.share({
-        message: `Hey! Use my OOTER referral code ${referralCode} and earn 100 coins on your first booking.`,
+        message: shareMessage,
+        url: Platform.OS === 'ios' ? playStoreUrl : shareMessage,
+        title: 'Refer OOTER',
       });
     } catch (error) {
       Alert.alert('Error', 'Failed to share code');

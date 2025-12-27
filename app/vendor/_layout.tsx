@@ -175,7 +175,9 @@ export default function VendorDrawerLayout() {
             <View style={styles.profileTextContainer}>
               <Text style={styles.name}>{user?.name || 'Vendor'}</Text>
               <Text style={styles.phone}>+91-{user?.phone?.slice(-10) || 'xxxxx'}</Text>
-              <Text style={styles.company}>Adbook Communication Pvt Ltd</Text>
+              {user?.companyName ? (
+                <Text style={styles.company}>{user.companyName}</Text>
+              ) : null}
             </View>
           </TouchableOpacity>
 

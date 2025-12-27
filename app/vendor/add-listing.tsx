@@ -136,7 +136,6 @@ export default function AddListingScreen() {
 
   const generateDescription = () => {
     const points = [];
-    if (formData.verifiedProperty) points.push('• Verified Property');
     if (formData.eyeCatching) points.push('• Eye catching visibility');
     if (formData.mainHighway) points.push('• Site on the Main Highway');
     if (formData.currentlyAvailable) points.push('• Currently Available');
@@ -646,17 +645,6 @@ export default function AddListingScreen() {
           
           <View style={styles.checkboxRow}>
             <TouchableOpacity 
-              style={[styles.checkbox, formData.verifiedProperty && styles.checkedBox]} 
-              onPress={() => !loading && updateFormData('verifiedProperty', !formData.verifiedProperty)}
-              disabled={loading}
-            >
-              {formData.verifiedProperty && <Ionicons name="checkmark" size={16} color="white" />}
-            </TouchableOpacity>
-            <Text style={styles.checkboxLabel}>Verified Property</Text>
-          </View>
-          
-          <View style={styles.checkboxRow}>
-            <TouchableOpacity 
               style={[styles.checkbox, formData.eyeCatching && styles.checkedBox]} 
               onPress={() => !loading && updateFormData('eyeCatching', !formData.eyeCatching)}
               disabled={loading}
@@ -914,11 +902,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: Platform.OS === 'ios' ? 10 : 8,
     fontSize: 14,
     backgroundColor: '#fff',
     marginBottom: 8,
+    textAlignVertical: 'center',
+    minHeight: 40,
   },
   disabledInput: {
     backgroundColor: '#f5f5f5',

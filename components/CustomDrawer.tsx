@@ -196,7 +196,9 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
         <View style={styles.profileTextContainer}>
           <Text style={styles.name}>{user?.name || 'Guest'}</Text>
           <Text style={styles.phone}>+91-{user?.phone?.slice(-10) || 'xxxxx'}</Text>
-          <Text style={styles.company}>Adbook Communication Pvt Ltd</Text>
+          {user?.companyName ? (
+            <Text style={styles.company}>{user.companyName}</Text>
+          ) : null}
         </View>
       </TouchableOpacity>
 
