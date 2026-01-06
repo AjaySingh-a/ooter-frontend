@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   ActivityIndicator,
   Alert,
   ScrollView,
@@ -27,15 +26,31 @@ const uploadPdfToCloudinary = async (uri: string, fileName: string): Promise<str
   } as any);
   
   formData.append('upload_preset', 'ooter_upload');
+  formData.append('resource_type', 'raw'); // Explicitly set resource type for PDFs
   
   try {
     const res = await fetch('https://api.cloudinary.com/v1_1/dj6qosspd/raw/upload', {
       method: 'POST',
       body: formData,
+      // Don't set Content-Type header - let fetch set it automatically with boundary
     });
+    
+    // Check if response is OK
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error('Cloudinary upload failed:', errorData);
+      return null;
+    }
     
     const data = await res.json();
     console.log('Cloudinary PDF upload response:', data);
+    
+    // Check if secure_url exists
+    if (!data.secure_url) {
+      console.error('No secure_url in response:', data);
+      return null;
+    }
+    
     return data.secure_url;
   } catch (error) {
     console.error('Cloudinary PDF upload error:', error);
@@ -72,6 +87,13 @@ export default function VerificationUpload() {
         return;
       }
       
+      // Validate file size (10MB limit for Cloudinary free plan)
+      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+      if (file.size && file.size > maxSize) {
+        Alert.alert('File Too Large', 'File size must be less than 10MB. Please select a smaller file.');
+        return;
+      }
+      
       if (type === 'GST') {
         setGstFile(file);
       } else if (type === 'CIN') {
@@ -105,7 +127,10 @@ export default function VerificationUpload() {
       const gstUrl = await uploadPdfToCloudinary(gstFile.uri, gstFile.name);
       
       if (!gstUrl) {
-        Alert.alert('Upload Failed', 'GST certificate upload to Cloudinary failed.');
+        Alert.alert(
+          'Upload Failed', 
+          'GST certificate upload to Cloudinary failed. Please check:\n1. File size is under 10MB\n2. File is a valid PDF\n3. Internet connection is stable'
+        );
         setLoading(false);
         return;
       }
@@ -146,13 +171,24 @@ export default function VerificationUpload() {
         }),
       });
 
-      const data = await response.json();
+      // Check if response has JSON content
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error('Failed to parse response:', e);
+        Alert.alert('Error', 'Failed to submit verification. Please try again.');
+        setLoading(false);
+        return;
+      }
 
       if (response.ok) {
         Alert.alert('Success', 'Verification submitted successfully!');
         router.replace('/vendor');
       } else {
-        Alert.alert('Error', data.message || 'Upload failed. Please try again.');
+        const errorMessage = data.message || data.error || 'Upload failed. Please try again.';
+        console.error('Backend error:', data);
+        Alert.alert('Error', errorMessage);
       }
     } catch (e) {
       console.error('Upload error:', e);
